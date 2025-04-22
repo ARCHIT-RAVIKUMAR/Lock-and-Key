@@ -1,0 +1,98 @@
+import 'dart:math';
+import 'dart:io'; // To handle command-line I/O
+import 'package:args/args.dart'; // For parsing command-line arguments
+
+/// A class to handle password operations such as validation and generation
+class PasswordManager {
+  final Random _random = Random();
+
+  /// Validates the strength of a password
+  ///
+  /// Returns:
+  /// - 'Strong' if it has at least 12 characters, a mix of upper/lower case, numbers and symbols
+  /// - 'Intermediate' if it has at least 8 characters with letters and numbers
+  /// - 'Low' if it has less than 8 characters or lacks variety
+  String validateStrength(String password) {
+    final hasUpper = password.contains(RegExp(r'[A-Z]'));
+    final hasLower = password.contains(RegExp(r'[a-z]'));
+    final hasDigit = password.contains(RegExp(r'[0-9]'));
+    final hasSpecial = password.contains(RegExp(r'[!@#\$%^&*(),.?":{}|<>]'));
+    final length = password.length;
+
+    if (length >= 12 && hasUpper && hasLower && hasDigit && hasSpecial) {
+      return 'Strong';
+    } else if (length >= 8 && hasLower && hasDigit) {
+      return 'Intermediate';
+    } else {
+      return 'Low';
+    }
+  }
+
+  /// Generates a password of given [length] using [charSet]
+  String _generatePassword(int length, String charSet) {
+    return List.generate(length, (_) => charSet[_random.nextInt(charSet.length)]).join();
+  }
+
+  /// Generates a strong password (12-16 characters, includes upper, lower, digits, and special characters)
+  String generateStrongPassword() {
+    const upper = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    const lower = 'abcdefghijklmnopqrstuvwxyz';
+    const digits = '0123456789';
+    const special = '!@#\$%^&*()_+[]{}<>?';
+    final allChars = upper + lower + digits + special;
+
+    return _generatePassword(_random.nextInt(5) + 12, allChars);
+  }
+
+  /// Generates an intermediate password (8-10 characters, includes letters and digits)
+  String generateIntermediatePassword() {
+    const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    return _generatePassword(_random.nextInt(3) + 8, chars);
+  }
+
+  /// Generates a low strength password (4-7 characters, only lowercase letters)
+  String generateLowPassword() {
+    const chars = 'abcdefghijklmnopqrstuvwxyz';
+    return _generatePassword(_random.nextInt(4) + 4, chars);
+  }
+}
+
+void main(List<String> arguments) {
+  final parser = ArgParser();
+  parser.addOption('password', help: 'Validate a password for strength.');
+  parser.addOption('generate', help: 'Generate a password with desired strength (low, intermediate, strong).');
+  parser.addFlag('help', negatable: false, help: 'Display this help message.');
+
+  final results = parser.parse(arguments);
+
+  final manager = PasswordManager();
+
+  if (results['help'] as bool || arguments.isEmpty) {
+    print('Password Manager Command-Line Utility');
+    print(parser.usage);
+    return;
+  }
+
+  if (results['password'] != null) {
+    final password = results['password']!;
+    final strength = manager.validateStrength(password);
+    print('Password Strength: $strength');
+  } else if (results['generate'] != null) {
+    final level = results['generate']!.toLowerCase();
+    switch (level) {
+      case 'strong':
+        print('Generated Strong Password: ${manager.generateStrongPassword()}');
+        break;
+      case 'intermediate':
+        print('Generated Intermediate Password: ${manager.generateIntermediatePassword()}');
+        break;
+      case 'low':
+        print('Generated Low Password: ${manager.generateLowPassword()}');
+        break;
+      default:
+        print('Invalid strength level. Use "strong", "intermediate", or "low".');
+    }
+  } else {
+    print('Invalid input. Use --help to see the available options.');
+  }
+}
